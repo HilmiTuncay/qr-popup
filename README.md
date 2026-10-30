@@ -10,7 +10,7 @@ Yoklama sitesini arka planda açık tutar, sayfadaki QR kodu **ekran görüntüs
 
 ## Kullanım (Windows)
 
-1. İndirdiğiniz `QR-Yoklama-1.2.0-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
+1. İndirdiğiniz `QR-Yoklama-1.2.1-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
 2. İlk açılışta Ayarlar penceresi gelir. Adres hazır gelir (https://yoklama.uludag.edu.tr). Kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın.
 3. Açılan pencerede kutular dolu gelir; **Giriş**'e basın ve QR'ın göründüğü yoklama ekranını başlatın. Ardından o pencereyi **kapatın** (uygulama kapanmaz, site arka planda açık kalır).
 4. QR penceresi kendiliğinden köşede belirir. PowerPoint'i tam ekran başlatın.
@@ -26,6 +26,8 @@ Uygulama sistem tepsisinde (saatin yanındaki QR simgesi) çalışır. Giriş bi
 | Ctrl+Alt+↑ / ↓ | Köşe penceresini büyüt / küçült |
 
 Pencere fareyle sürüklenebilir; yeri hatırlanır. Ekran kenarına tam oturtulunca ya da biraz taşırılınca kenara/köşeye yapışır. Fareyle pencerenin üstüne gelince köşelerde tutamaçlar belirir; köşeden çekerek QR'ı büyütüp küçültebilirsiniz (kare kalır, karşı köşe yerinde durur). Tepsi menüsünden köşe, ekran (projektör) ve görünüm modu seçilebilir.
+
+QR penceresinin alt çubuğunun sağında iki küçük düğme vardır: **⛶** QR'ı ekranın ortasında büyük gösterir (tekrar basınca köşeye döner), **–** pencereyi simge durumuna küçültür. Küçültülen pencere görev çubuğunda **QR Yoklama** simgesi olarak durur; simgeye tıklayınca geri gelir.
 
 ## Bilmeniz gerekenler
 

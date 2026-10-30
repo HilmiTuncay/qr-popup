@@ -153,6 +153,8 @@ function createOverlay() {
   overlayWin.setAlwaysOnTop(true, 'screen-saver');
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); // macOS tam ekran Space'leri
   overlayWin.loadFile(path.join(__dirname, 'overlay.html'));
+  // Görev çubuğundan geri getirildi: yeniden odak almayan, her zaman üstte pencere
+  overlayWin.on('restore', () => { overlayWin.setFocusable(false); overlayWin.setAlwaysOnTop(true, 'screen-saver'); });
   overlayWin.on('moved', () => {
     if (big || resizing) return;
     snapToEdges();
@@ -316,6 +318,7 @@ async function tick() {
 
 function updateVisibility(now, found) {
   if (!overlayWin) return;
+  if (overlayWin.isMinimized()) return;   // kullanıcı simge durumuna küçülttü: görev çubuğundan geri getirene kadar dokunma
   const absentFor = st.lastSeen ? now - st.lastSeen : Infinity;
   const shouldShow = !userHidden && (found || !cfg.autoHide || absentFor < cfg.autoHideSec * 1000) && (st.lastSeen || !cfg.autoHide);
   if (shouldShow && !overlayWin.isVisible()) { placeOverlay(); overlayWin.showInactive(); }
@@ -329,18 +332,15 @@ function send(ch, data) { if (overlayWin && !overlayWin.isDestroyed()) overlayWi
 function restartTimer() { clearInterval(timer); timer = setInterval(tick, Math.max(250, cfg.intervalMs)); }
 
 // ---------------------------------------------------------------- menü ve kısayollar
-function toggleOverlay() { userHidden = !userHidden; if (userHidden) overlayWin.hide(); else { placeOverlay(); overlayWin.showInactive(); } rebuildMenu(); }
-// QR penceresindeki küçük düğmeler: tam ekran (ortada büyük) ve simge durumu (tepsiye gizle)
-let hideHintShown = false;
+function toggleOverlay() {
+  if (overlayWin.isMinimized()) { userHidden = false; overlayWin.restore(); rebuildMenu(); return; }
+  userHidden = !userHidden; if (userHidden) overlayWin.hide(); else { placeOverlay(); overlayWin.showInactive(); } rebuildMenu();
+}
+// QR penceresindeki küçük düğmeler: tam ekran (ortada büyük) ve simge durumu (görev çubuğuna küçült)
 ipcMain.on('overlay:big', toggleBig);
-ipcMain.on('overlay:hide', () => {
-  if (userHidden) return;
-  toggleOverlay();
-  if (!hideHintShown && tray && process.platform === 'win32') {
-    hideHintShown = true;
-    tray.displayBalloon({ title: 'QR gizlendi', content: 'Geri getirmek için Ctrl+Alt+Q ya da tepsideki QR simgesi → "QR penceresini göster".' });
-  }
-});
+// Odak almayan pencere Windows'ta görev çubuğunda görünmez; küçültürken geçici olarak normal pencere yap ki
+// görev çubuğunda simgesi çıksın ve oradan geri getirilebilsin ('restore' olayında eski hâline döner)
+ipcMain.on('overlay:min', () => { overlayWin.setFocusable(true); overlayWin.setSkipTaskbar(false); overlayWin.minimize(); });
 function toggleBig() { big = !big; placeOverlay(); if (!userHidden && st.lastSeen) overlayWin.showInactive(); rebuildMenu(); }
 function resize(delta) { cfg.size = Math.max(160, Math.min(1200, cfg.size + delta)); big = false; saveCfg(); placeOverlay(); }
 
@@ -461,6 +461,7 @@ app.whenReady().then(async () => {
   createOverlay();
   const icon = nativeImage.createFromDataURL(await QRCode.toDataURL('QR', { width: 32, margin: 1 }));
   tray = new Tray(icon);
+  overlayWin.setIcon(icon);   // görev çubuğunda Electron simgesi yerine QR simgesi
   tray.setToolTip('QR Yoklama · Hilmi Tunçay');
   tray.on('click', () => tray.popUpContextMenu());
   rebuildMenu();
@@ -497,7 +498,14 @@ function runTestHooks() {
       for (const type of ['mouseDown', 'mouseUp']) overlayWin.webContents.sendInputEvent({ type, x: Math.round(r[0]), y: Math.round(r[1]), button: 'left', clickCount: 1 });
     };
     setTimeout(async () => { await click('big'); setTimeout(() => console.log('QRY_EVENT click big ->', overlayWin.getBounds().width + 'px', 'big=' + big), 500); }, 5000);
-    setTimeout(async () => { await click('big'); await new Promise((r) => setTimeout(r, 1500)); await click('min'); setTimeout(() => console.log('QRY_EVENT click min -> visible=' + overlayWin.isVisible()), 500); }, 8000);
+    setTimeout(async () => { await click('big'); await new Promise((r) => setTimeout(r, 1500)); await click('min');
+      setTimeout(() => console.log('QRY_EVENT click min -> minimized=' + overlayWin.isMinimized()), 500);
+      setTimeout(() => {   // birkaç tarama sonra hâlâ küçük mü; sonra görev çubuğundan geri getirme
+        console.log('QRY_EVENT 3 sn sonra minimized=' + overlayWin.isMinimized());
+        overlayWin.restore();
+        setTimeout(() => console.log('QRY_EVENT restore -> minimized=' + overlayWin.isMinimized(), 'visible=' + overlayWin.isVisible(), 'aot=' + overlayWin.isAlwaysOnTop(), 'focused=' + overlayWin.isFocused()), 800);
+      }, 3500);
+    }, 8000);
   }
   setInterval(async () => {
     if (quitting || overlayWin.isDestroyed()) return;

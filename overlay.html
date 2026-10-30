@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
-<title>QR</title>
+<title>QR Yoklama</title>
 <style>
   html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; user-select: none; font-family: system-ui, "Segoe UI", sans-serif; }
   body { display: flex; flex-direction: column; -webkit-app-region: drag; cursor: move; }
@@ -32,7 +32,7 @@
 <body>
   <div id="qr"><div id="wait">QR bekleniyor…</div></div>
   <div id="bar">Yoklama QR</div>
-  <div id="ctl"><button id="big" title="Tam ekran (Ctrl+Alt+B)">⛶</button><button id="min" title="Simge durumuna küçült (Ctrl+Alt+Q ile geri gelir)">–</button></div>
+  <div id="ctl"><button id="big" title="Tam ekran (Ctrl+Alt+B)">⛶</button><button id="min" title="Simge durumuna küçült (görev çubuğundaki simgeyle geri gelir)">–</button></div>
   <div class="grip tl" data-c="top-left"></div><div class="grip tr" data-c="top-right"></div>
   <div class="grip bl" data-c="bottom-left"></div><div class="grip br" data-c="bottom-right"></div>
 <script>
@@ -43,7 +43,7 @@
   });
   const bigBtn = document.getElementById('big');
   bigBtn.onclick = () => window.qry.toggleBig();
-  document.getElementById('min').onclick = () => window.qry.hide();
+  document.getElementById('min').onclick = () => window.qry.minimize();
   window.qry.onStatus((s) => {
     bigBtn.textContent = s.big ? '⤡' : '⛶'; bigBtn.title = s.big ? 'Köşeye geri al (Ctrl+Alt+B)' : 'Tam ekran (Ctrl+Alt+B)';
     const sec = (ms) => Math.round(ms / 1000);
