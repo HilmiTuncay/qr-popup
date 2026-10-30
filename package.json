@@ -48,10 +48,10 @@
     },
     "appx": {
       "applicationId": "QRYoklama",
-      "identityName": "QRYoklama.GeciciKimlik",
-      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "identityName": "HilmiTunay.popupqr",
+      "publisher": "CN=23CE5E34-0776-4488-B87E-DC883D44A4AE",
       "publisherDisplayName": "Hilmi Tunçay",
-      "displayName": "QR Yoklama",
+      "displayName": "popup qr",
       "backgroundColor": "#0b8793",
       "languages": [
         "tr-TR"
