@@ -6,9 +6,7 @@
 
 <br>
 
-<a href="https://github.com/HilmiTuncay/qr-popup/releases/latest/download/QR-Yoklama.exe">
-  <img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%C4%B0ND%C4%B0R-Windows%20i%C3%A7in%20QR--Yoklama.exe-1a7f37?style=for-the-badge&labelColor=0b6bcb" alt="İndir: QR-Yoklama.exe (Windows)" height="56">
-</a>
+<a href="https://github.com/HilmiTuncay/qr-popup/releases/latest/download/QR-Yoklama.exe"><img src="docs/indir.svg" alt="İndir: QR-Yoklama.exe (Windows)" width="460"></a>
 
 <br><br>
 
