@@ -1,16 +1,41 @@
-# QR Yoklama Penceresi
+<div align="center">
+
+# QR Yoklama
+
+**Yoklama QR kodunu PowerPoint slaytının üstünde canlı gösterir.**
+
+<br>
+
+<a href="https://github.com/HilmiTuncay/qr-popup/releases/latest/download/QR-Yoklama.exe">
+  <img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%C4%B0ND%C4%B0R-Windows%20i%C3%A7in%20QR--Yoklama.exe-1a7f37?style=for-the-badge&labelColor=0b6bcb" alt="İndir: QR-Yoklama.exe (Windows)" height="56">
+</a>
+
+<br><br>
+
+[![Sürüm](https://img.shields.io/github/v/release/HilmiTuncay/qr-popup?label=s%C3%BCr%C3%BCm&color=0b6bcb)](https://github.com/HilmiTuncay/qr-popup/releases/latest)
+[![Lisans: MIT](https://img.shields.io/badge/lisans-MIT%20%C2%B7%20%C3%BCcretsiz-1a7f37)](LICENSE)
+
+**[⬇️ Doğrudan indirme bağlantısı](https://github.com/HilmiTuncay/qr-popup/releases/latest/download/QR-Yoklama.exe)** — her zaman en yeni sürüm
+
+</div>
+
+---
+
+### 3 adımda başlayın
+
+1. **İndirin:** yukarıdaki yeşil düğmeye basın, `QR-Yoklama.exe` iner. Kurulum gerekmez.
+2. **Açın:** dosyaya çift tıklayın. Windows *"Bilgisayarınız korundu"* derse **Ek bilgi → Yine de çalıştır**'a basın.
+3. **Giriş yapın:** açılan Ayarlar'a kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın, sitede yoklamayı başlatın. QR, slaytın köşesinde belirir.
+
+---
 
 _Hilmi Tunçay_
 
 Yoklama sitesini arka planda açık tutar, sayfadaki QR kodu **ekran görüntüsünden kendisi bulup okur** ve slaytın üstünde duran küçük bir pencerede **yeniden, net olarak** çizer. QR her yenilendiğinde (yeni anahtar) pencere de anında güncellenir. Sitenin QR'ı nasıl ürettiği (resim, canvas, SVG, tüm sayfa yenileme) önemli değildir, CSS seçicisi ayarlamak gerekmez.
 
-## İndir
-
-**[En son sürümü indir (Windows, portable exe)](https://github.com/HilmiTuncay/qr-popup/releases/latest)** · MIT lisanslı, ücretsiz.
-
 ## Kullanım (Windows)
 
-1. İndirdiğiniz `QR-Yoklama-1.2.1-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
+1. İndirdiğiniz `QR-Yoklama.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
 2. İlk açılışta Ayarlar penceresi gelir. Adres hazır gelir (https://yoklama.uludag.edu.tr). Kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın.
 3. Açılan pencerede kutular dolu gelir; **Giriş**'e basın ve QR'ın göründüğü yoklama ekranını başlatın. Ardından o pencereyi **kapatın** (uygulama kapanmaz, site arka planda açık kalır).
 4. QR penceresi kendiliğinden köşede belirir. PowerPoint'i tam ekran başlatın.
