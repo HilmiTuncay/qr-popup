@@ -54,8 +54,7 @@
       "displayName": "QR Yoklama",
       "backgroundColor": "#0b8793",
       "languages": [
-        "tr-TR",
-        "en-US"
+        "tr-TR"
       ],
       "showNameOnTiles": false
     }
