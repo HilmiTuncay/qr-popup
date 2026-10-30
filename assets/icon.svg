@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="#0b8793"/>
+  <g fill="#fff">
+    <path fill-rule="evenodd" d="M96 96h120v120H96zM120 120v72h72v-72z"/><rect x="138" y="138" width="36" height="36"/>
+    <path fill-rule="evenodd" d="M296 96h120v120H296zM320 120v72h72v-72z"/><rect x="338" y="138" width="36" height="36"/>
+    <path fill-rule="evenodd" d="M96 296h120v120H96zM120 320v72h72v-72z"/><rect x="138" y="338" width="36" height="36"/>
+    <rect x="240" y="96" width="32" height="32"/><rect x="240" y="152" width="32" height="64"/>
+    <rect x="96" y="240" width="64" height="32"/><rect x="184" y="240" width="32" height="32"/>
+    <rect x="240" y="240" width="32" height="32"/>
+  </g>
+  <circle cx="356" cy="356" r="84" fill="#1a7f37" stroke="#fff" stroke-width="16"/>
+  <path d="M316 358l28 28 54-58" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

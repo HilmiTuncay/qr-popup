@@ -68,6 +68,7 @@
     <button id="src">Yoklama sayfasını göster</button>
     <span id="ok"></span>
   </div>
+  <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Siteye girmeden denemek için: <a href="#" id="demo">deneme sayfasını aç</a></p>
   <p style="margin:18px 0 0;text-align:right;font-size:11px;color:#8a94a0">QR Yoklama · Hilmi Tunçay</p>
 <script>
   const $ = (id) => document.getElementById(id);
@@ -84,6 +85,7 @@
   };
   $('forget').onclick = async (e) => { e.preventDefault(); showPass((await window.qry.setCfg({ forgetPassword: true })).hasPassword); };
   $('src').onclick = () => window.qry.showSource();
+  $('demo').onclick = (e) => { e.preventDefault(); window.qry.openDemo(); };
 </script>
 </body>
 </html>

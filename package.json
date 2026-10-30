@@ -1,6 +1,6 @@
 {
   "name": "qr-yoklama",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Yoklama QR kodunu slaytın üstünde canlı gösterir",
   "main": "main.js",
   "scripts": {
@@ -32,16 +32,32 @@
       "preload.js",
       "overlay.html",
       "settings.html",
+      "demo.html",
+      "assets/**",
       "package.json"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": "dmg"
     },
     "linux": {
       "target": "AppImage"
+    },
+    "appx": {
+      "applicationId": "QRYoklama",
+      "identityName": "MAGAZA_KIMLIGI_GIRILECEK",
+      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "publisherDisplayName": "Hilmi Tunçay",
+      "displayName": "QR Yoklama",
+      "backgroundColor": "#0b8793",
+      "languages": [
+        "tr-TR",
+        "en-US"
+      ],
+      "showNameOnTiles": false
     }
   }
 }

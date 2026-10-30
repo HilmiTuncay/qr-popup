@@ -7,6 +7,7 @@ const {
   screen, ipcMain, dialog, shell, safeStorage,
 } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const fs = require('fs');
 const jsQR = require('jsqr');
 const QRCode = require('qrcode');
@@ -112,6 +113,23 @@ function showSource() {
 function savedPassword() {
   try { return cfg.passwordEnc ? safeStorage.decryptString(Buffer.from(cfg.passwordEnc, 'base64')) : ''; } catch { return ''; }
 }
+// ---------------------------------------------------------------- deneme sayfası
+// Gerçek siteye girmeden denemek (ve mağaza incelemesi) için: QR'ı uygulama üretir, 15 sn'de bir değişir
+const DEMO_URL = pathToFileURL(path.join(__dirname, 'demo.html')).href;
+const DEMO_PERIOD = 15000;
+const demo = { slot: null, src: null };
+function openDemo() { sourceWin.loadURL(DEMO_URL); showSource(); }
+async function demoTick() {
+  if (quitting || !sourceWin || sourceWin.isDestroyed() || !sourceWin.webContents.getURL().startsWith(DEMO_URL)) return;
+  const now = Date.now(), slot = Math.floor(now / DEMO_PERIOD);
+  if (slot !== demo.slot) {
+    demo.slot = slot;
+    demo.src = await QRCode.toDataURL(`QR Yoklama deneme kodu #${slot % 10000} — gerçek bir yoklama kodu değildir`, { width: 280, margin: 2 });
+  }
+  const left = Math.ceil((DEMO_PERIOD - (now % DEMO_PERIOD)) / 1000);
+  sourceWin.webContents.executeJavaScript(`window.setQR && setQR(${JSON.stringify(demo.src)}, ${left})`).catch(() => {});
+}
+
 function sameSite(a, b) { try { return new URL(a).origin === new URL(b).origin; } catch { return false; } }
 function fillLogin() {
   if (!cfg.username && !cfg.passwordEnc) return;
@@ -210,7 +228,7 @@ function cornerPos(area, size) {
 function createSettings() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
-    width: 520, height: 720, resizable: false, autoHideMenuBar: true, title: 'QR Yoklama — Ayarlar',
+    width: 520, height: 760, resizable: false, autoHideMenuBar: true, title: 'QR Yoklama — Ayarlar',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true },
   });
   settingsWin.loadFile(path.join(__dirname, 'settings.html'));
@@ -276,7 +294,7 @@ function withRect(r, ox, oy) {
 }
 
 async function tick() {
-  if (busy || !sourceWin || !cfg.url) return;
+  if (busy || quitting || !sourceWin || sourceWin.isDestroyed() || !cfg.url) return;
   busy = true;
   try {
     // stayHidden: pencere gizliyken de sayfa çizilmeye devam etsin (görünürken verilirse pencere boş kalır)
@@ -383,6 +401,7 @@ function rebuildMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Yoklama sayfasını göster (giriş / QR başlatma)', click: showSource },
     { label: 'Sayfayı yenile', click: () => sourceWin.webContents.reload() },
+    { label: 'Deneme sayfasını aç (siteye girmeden dene)', click: openDemo },
     { type: 'separator' },
     { label: 'QR penceresini göster', type: 'checkbox', checked: !userHidden, accelerator: 'Ctrl+Alt+Q', click: toggleOverlay },
     { label: 'Ortada büyük göster', type: 'checkbox', checked: big, accelerator: 'Ctrl+Alt+B', click: toggleBig },
@@ -423,6 +442,7 @@ ipcMain.handle('cfg:set', (_e, { password, forgetPassword, passwordEnc, hasPassw
   return publicCfg();
 });
 ipcMain.handle('source:show', showSource);
+ipcMain.handle('demo:open', openDemo);
 
 // ---------------------------------------------------------------- başlangıç
 // Aynı anda ikinci kopya açılırsa: açılan daha yeni sürümse eskisi kapanır ve yenisi devralır;
@@ -459,9 +479,10 @@ app.whenReady().then(async () => {
   if (process.platform === 'darwin' && app.dock) app.dock.hide(); // macOS: tam ekran slaytın üstünde kalabilmek için
   createSourceWindow();
   createOverlay();
-  const icon = nativeImage.createFromDataURL(await QRCode.toDataURL('QR', { width: 32, margin: 1 }));
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon-32.png'));
   tray = new Tray(icon);
-  overlayWin.setIcon(icon);   // görev çubuğunda Electron simgesi yerine QR simgesi
+  overlayWin.setIcon(icon);   // görev çubuğunda Electron simgesi yerine uygulama simgesi
+  sourceWin.setIcon(icon);
   tray.setToolTip('QR Yoklama · Hilmi Tunçay');
   tray.on('click', () => tray.popUpContextMenu());
   rebuildMenu();
@@ -470,6 +491,8 @@ app.whenReady().then(async () => {
   screen.on('display-removed', () => { placeOverlay(); rebuildMenu(); });
   if (firstRun || !cfg.url) createSettings();
   restartTimer();
+  setInterval(demoTick, 1000);
+  if (TEST && process.env.QRY_TEST_DEMO) openDemo();
   if (TEST) runTestHooks();
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());

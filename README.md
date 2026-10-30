@@ -24,7 +24,8 @@
 
 1. **İndirin:** yukarıdaki yeşil düğmeye basın, `QR-Yoklama.exe` iner. Kurulum gerekmez.
 2. **Açın:** dosyaya çift tıklayın. Windows *"Bilgisayarınız korundu"* derse **Ek bilgi → Yine de çalıştır**'a basın.
-3. **Giriş yapın:** açılan Ayarlar'a kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın, sitede yoklamayı başlatın. QR, slaytın köşesinde belirir.
+3. **Deneyin (isteğe bağlı):** Ayarlar'daki **deneme sayfasını aç** bağlantısı, siteye girmeden uygulamayı gerçek gibi denemenizi sağlar.
+4. **Giriş yapın:** açılan Ayarlar'a kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın, sitede yoklamayı başlatın. QR, slaytın köşesinde belirir.
 
 ---
 

@@ -1,0 +1,25 @@
+# Microsoft Store paketi (MSIX/APPX). Store paketi kendisi imzalar; burada imza gerekmez.
+# Mağaza kimliği package.json → build.appx içindedir (Partner Center → Product identity).
+name: Store paketi
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  appx:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx electron-builder --win appx --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QR-Yoklama-appx
+          path: dist/*.appx
+          if-no-files-found: error

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('qry', {
   getCfg: () => ipcRenderer.invoke('cfg:get'),
   setCfg: (patch) => ipcRenderer.invoke('cfg:set', patch),
   showSource: () => ipcRenderer.invoke('source:show'),
+  openDemo: () => ipcRenderer.invoke('demo:open'),
   resizeStart: (corner) => ipcRenderer.send('resize:start', corner),
   resizeMove: (dx, dy) => ipcRenderer.send('resize:move', dx, dy),
   resizeEnd: () => ipcRenderer.send('resize:end'),
