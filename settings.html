@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>QR Yoklama — Ayarlar</title>
+<style>
+  :root { --fg:#1d2433; --muted:#5b6475; --line:#d9dee7; --acc:#1f5eff; --bg:#f7f8fb; }
+  body { margin: 0; padding: 22px 26px; font: 14px/1.45 system-ui, "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 18px; color: var(--muted); }
+  label { display: block; font-weight: 600; margin: 14px 0 5px; }
+  small { display: block; color: var(--muted); font-weight: 400; margin-top: 3px; }
+  input[type=url], input[type=number], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: #fff; }
+  .row { display: flex; gap: 12px; } .row > div { flex: 1; }
+  .check { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+  .btns { display: flex; gap: 10px; margin-top: 22px; }
+  button { padding: 9px 16px; border-radius: 6px; border: 1px solid var(--line); background: #fff; font: inherit; cursor: pointer; }
+  button.primary { background: var(--acc); color: #fff; border-color: var(--acc); }
+  #ok { color: #1a7f37; margin-left: 6px; align-self: center; }
+</style>
+</head>
+<body>
+  <h1>QR Yoklama Penceresi</h1>
+  <p class="lead">Yoklama sitesinin adresini girin. Kaydedince site açılır: giriş yapıp QR ekranını başlatın ve o pencereyi kapatın. Uygulama QR'ı kendisi bulur ve slaytın üstünde gösterir.</p>
+
+  <label for="url">Yoklama sayfasının adresi</label>
+  <input id="url" type="url" placeholder="https://yoklama.universite.edu.tr/...">
+
+  <div class="row">
+    <div>
+      <label for="interval">Tarama sıklığı</label>
+      <select id="interval">
+        <option value="500">Yarım saniyede bir</option>
+        <option value="1000">Saniyede bir</option>
+        <option value="2000">2 saniyede bir</option>
+      </select>
+    </div>
+    <div>
+      <label for="size">Köşe penceresi boyutu (px)</label>
+      <input id="size" type="number" min="160" max="1200" step="20">
+    </div>
+  </div>
+
+  <label for="mode">Görünüm</label>
+  <select id="mode">
+    <option value="redraw">QR'ı yeniden çiz — en net, projektörde en iyi okunan</option>
+    <option value="crop">Sayfadaki görüntüyü olduğu gibi kırp</option>
+  </select>
+
+  <label class="check"><input id="autoHide" type="checkbox"> QR sayfadan kaybolunca pencereyi otomatik gizle</label>
+  <small>Yoklama bitince QR penceresi kendiliğinden kapanır, yeni yoklamada geri gelir.</small>
+
+  <div class="btns">
+    <button class="primary" id="save">Kaydet</button>
+    <button id="src">Yoklama sayfasını göster</button>
+    <span id="ok"></span>
+  </div>
+  <p style="margin:18px 0 0;text-align:right;font-size:11px;color:#8a94a0">QR Yoklama · Hilmi Tunçay</p>
+<script>
+  const $ = (id) => document.getElementById(id);
+  window.qry.getCfg().then((c) => {
+    $('url').value = c.url; $('interval').value = String(c.intervalMs); $('size').value = c.size;
+    $('mode').value = c.mode; $('autoHide').checked = c.autoHide;
+  });
+  $('save').onclick = async () => {
+    await window.qry.setCfg({ url: $('url').value.trim(), intervalMs: +$('interval').value, size: +$('size').value || 320, mode: $('mode').value, autoHide: $('autoHide').checked });
+    $('ok').textContent = 'Kaydedildi ✓'; setTimeout(() => $('ok').textContent = '', 2500);
+  };
+  $('src').onclick = () => window.qry.showSource();
+</script>
+</body>
+</html>

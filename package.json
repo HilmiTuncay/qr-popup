@@ -1,0 +1,47 @@
+{
+  "name": "qr-yoklama",
+  "version": "1.0.0",
+  "description": "Yoklama QR kodunu slaytın üstünde canlı gösterir",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "author": "Hilmi Tunçay",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HilmiTuncay/qr-popup.git"
+  },
+  "homepage": "https://github.com/HilmiTuncay/qr-popup",
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "productName": "QR Yoklama",
+  "copyright": "© 2026 Hilmi Tunçay",
+  "build": {
+    "appId": "tr.edu.qryoklama",
+    "productName": "QR Yoklama",
+    "files": [
+      "main.js",
+      "preload.js",
+      "overlay.html",
+      "settings.html",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
