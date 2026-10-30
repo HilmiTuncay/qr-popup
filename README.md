@@ -4,9 +4,13 @@ _Hilmi Tunçay_
 
 Yoklama sitesini arka planda açık tutar, sayfadaki QR kodu **ekran görüntüsünden kendisi bulup okur** ve slaytın üstünde duran küçük bir pencerede **yeniden, net olarak** çizer. QR her yenilendiğinde (yeni anahtar) pencere de anında güncellenir. Sitenin QR'ı nasıl ürettiği (resim, canvas, SVG, tüm sayfa yenileme) önemli değildir, CSS seçicisi ayarlamak gerekmez.
 
+## İndir
+
+**[En son sürümü indir (Windows, portable exe)](https://github.com/HilmiTuncay/qr-popup/releases/latest)** · MIT lisanslı, ücretsiz.
+
 ## Kullanım (Windows)
 
-1. `QR-Yoklama-1.2.0-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
+1. İndirdiğiniz `QR-Yoklama-1.2.0-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
 2. İlk açılışta Ayarlar penceresi gelir. Adres hazır gelir (https://yoklama.uludag.edu.tr). Kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın.
 3. Açılan pencerede kutular dolu gelir; **Giriş**'e basın ve QR'ın göründüğü yoklama ekranını başlatın. Ardından o pencereyi **kapatın** (uygulama kapanmaz, site arka planda açık kalır).
 4. QR penceresi kendiliğinden köşede belirir. PowerPoint'i tam ekran başlatın.
