@@ -48,7 +48,7 @@
     },
     "appx": {
       "applicationId": "QRYoklama",
-      "identityName": "MAGAZA_KIMLIGI_GIRILECEK",
+      "identityName": "QRYoklama.GeciciKimlik",
       "publisher": "CN=00000000-0000-0000-0000-000000000000",
       "publisherDisplayName": "Hilmi Tunçay",
       "displayName": "QR Yoklama",
