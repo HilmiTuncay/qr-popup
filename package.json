@@ -1,6 +1,6 @@
 {
   "name": "qr-yoklama",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Yoklama QR kodunu slaytın üstünde canlı gösterir",
   "main": "main.js",
   "scripts": {

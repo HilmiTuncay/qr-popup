@@ -38,9 +38,7 @@
   window.qry.onStatus((s) => {
     const sec = (ms) => Math.round(ms / 1000);
     if (s.found) {
-      bar.className = '';
-      bar.textContent = s.left == null ? 'Canlı · yenilenme süresi ölçülüyor…'
-        : s.left > 0 ? `Yeni QR'a ${Math.ceil(s.left / 1000)} sn` : 'QR yenileniyor…';
+      bar.className = ''; bar.textContent = s.left != null ? `Canlı · ${s.left} sn` : 'Canlı';
     } else if (s.sinceSeen != null && s.sinceSeen < 8000) {
       bar.className = 'warn'; bar.textContent = 'QR yenileniyor…';
     } else {

@@ -12,6 +12,8 @@ const jsQR = require('jsqr');
 const QRCode = require('qrcode');
 
 const TEST = !!process.env.QRY_TEST; // otomatik test modu
+// Test kendi ayar/oturum klasörünü kullanır; böylece açık olan gerçek uygulamayla çakışmaz
+if (TEST) app.setPath('userData', path.join(require('os').tmpdir(), 'qr-yoklama-test'));
 
 // ---------------------------------------------------------------- ayarlar
 const DEFAULTS = {
@@ -47,9 +49,8 @@ const st = {
   lastData: null,          // son okunan QR içeriği (Buffer)
   lastLoc: null,           // son bulunduğu dikdörtgen (bitmap pikseli)
   lastSeen: 0,             // QR en son ne zaman görüldü
-  lastChange: 0,           // içerik en son ne zaman değişti
-  changes: 0,
-  gaps: [],                // ardışık iki yenileme arasındaki süreler (yenileme periyodunu tahmin için)
+  nums: null,              // sayfadaki "42 sn" sayılarının son taraması
+  cdIdx: null,             // bunlardan hangisi geri sayım (her saniye değişen)
 };
 let resizing = null;       // köşeden boyutlandırma sürerken {corner, b0}
 
@@ -66,10 +67,30 @@ function createSourceWindow() {
     },
   });
   sourceWin.on('close', (e) => { if (!quitting) { e.preventDefault(); sourceWin.hide(); } });
+  sourceWin.on('show', () => sourceWin.webContents.invalidate());   // gizliyken yakalanan sayfayı yeniden çiz
+  sourceWin.webContents.on('did-navigate', wakeSource);             // gizliyken sayfa değişti (oturum düştü, tam yenileme)
   sourceWin.webContents.setWindowOpenHandler(({ url }) => {
     sourceWin.loadURL(url); return { action: 'deny' };   // açılır pencereleri aynı pencerede aç
   });
-  if (cfg.url) sourceWin.loadURL(cfg.url);
+  if (cfg.url) {
+    sourceWin.loadURL(cfg.url);
+    // Açılışta sayfayı göster: giriş yapılıp QR başlatılınca kapatılır, uygulama tepside sürer
+    if (!TEST) sourceWin.once('ready-to-show', showSource);
+  }
+}
+
+// Bir kez gösterilip gizlenen pencerede yeni sayfa açılınca Chromium onu çizmiyor ve capturePage hiç dönmüyor.
+// Görünmez (opaklık 0), odak almayan kısa bir gösterim çizimi yeniden başlatır.
+let wakeTimer = null;
+function wakeSource() {
+  if (!sourceWin || (sourceWin.isVisible() && !wakeTimer)) return;
+  clearTimeout(wakeTimer);
+  sourceWin.setOpacity(0); sourceWin.showInactive();
+  wakeTimer = setTimeout(() => { wakeTimer = null; sourceWin.hide(); sourceWin.setOpacity(1); }, 300);
+}
+function showSource() {
+  clearTimeout(wakeTimer); wakeTimer = null;
+  sourceWin.setOpacity(1); sourceWin.show(); sourceWin.focus();
 }
 
 function createOverlay() {
@@ -179,6 +200,22 @@ function decode(bmp) {
   return r ? withRect(r, 0, 0) : null;
 }
 
+// Sayfadaki "42 sn" / "42 saniye" sayılarından her taramada değişeni geri sayım kabul et
+async function readCountdown() {
+  let nums;
+  try {
+    nums = await sourceWin.webContents.executeJavaScript(
+      String.raw`Array.from((document.body && document.body.innerText || '').matchAll(/(\d{1,4})\s*(?:sn|saniye)(?![a-zçğıöşü])/gi), (m) => +m[1])`, true);
+  } catch { return null; }
+  const prev = st.nums; st.nums = nums;
+  if (st.cdIdx != null && (!prev || nums.length !== prev.length)) st.cdIdx = null;   // sayfa değişti
+  if (st.cdIdx == null && prev && nums.length === prev.length) {
+    const i = nums.findIndex((n, k) => n !== prev[k]);
+    if (i >= 0) st.cdIdx = i;
+  }
+  return st.cdIdx != null ? nums[st.cdIdx] : null;
+}
+
 function withRect(r, ox, oy) {
   const L = r.location;
   const xs = [L.topLeftCorner.x, L.topRightCorner.x, L.bottomLeftCorner.x, L.bottomRightCorner.x];
@@ -191,20 +228,23 @@ async function tick() {
   if (busy || !sourceWin || !cfg.url) return;
   busy = true;
   try {
-    // stayHidden: pencere gizliyken de sayfa çizilmeye devam etsin
-    const img = await sourceWin.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+    // stayHidden: pencere gizliyken de sayfa çizilmeye devam etsin (görünürken verilirse pencere boş kalır)
+    // Zaman aşımı: yakalama takılırsa döngü kilitlenmesin, QR "görünmüyor" sayılsın
+    const img = await Promise.race([
+      sourceWin.webContents.capturePage(undefined, { stayHidden: !sourceWin.isVisible(), stayAwake: true }),
+      new Promise((r) => setTimeout(r, 3000, null)),
+    ]);
+    if (!img) wakeSource();
     const now = Date.now();
     let found = null;
-    if (!img.isEmpty()) {
+    if (img && !img.isEmpty()) {
       const bmp = bitmapRGBA(img);
       found = decode(bmp);
       if (found) {
         st.lastLoc = found.rect; st.lastSeen = now;
         const changed = !st.lastData || !st.lastData.equals(found.data);
         if (changed) {
-          // ilk görülüş yenileme anı değildir; periyot ancak iki gerçek yenileme arasından ölçülür
-          if (st.changes > 1) st.gaps = [...st.gaps, now - st.lastChange].slice(-5);
-          st.lastData = found.data; st.lastChange = now; st.changes++;
+          st.lastData = found.data;
           if (TEST) console.log('QRY_EVENT change', found.data.toString());
         }
         if (cfg.mode === 'crop') {
@@ -217,11 +257,9 @@ async function tick() {
         }
       }
     }
-    // QR uzun süre kaybolduysa (yoklama bitti) yeni yoklamada periyot baştan ölçülür
-    if (!found && st.lastSeen && now - st.lastSeen > cfg.autoHideSec * 1000 && st.changes) { st.changes = 0; st.gaps = []; st.lastData = null; }
+    const left = found ? await readCountdown() : null;
     updateVisibility(now, !!found);
-    const period = refreshPeriod();
-    send('status', { found: !!found, sinceSeen: st.lastSeen ? now - st.lastSeen : null, left: period && st.lastChange ? period - (now - st.lastChange) : null });
+    send('status', { found: !!found, sinceSeen: st.lastSeen ? now - st.lastSeen : null, left });
   } catch (e) {
     console.error('Tarama hatası:', e.message);
   } finally { busy = false; }
@@ -235,13 +273,6 @@ function updateVisibility(now, found) {
   else if (!shouldShow && overlayWin.isVisible()) overlayWin.hide();
   if (overlayWin.isVisible()) { overlayWin.setAlwaysOnTop(true, 'screen-saver'); overlayWin.moveTop(); } // PowerPoint öne geçse bile geri al
   if (tray) tray.setToolTip(found ? 'QR Yoklama — QR görünüyor' : st.lastSeen ? `QR Yoklama — QR ${Math.round(absentFor / 1000)} sn'dir görünmüyor` : 'QR Yoklama — QR bekleniyor');
-}
-
-// Sitenin QR yenileme periyodu: son ölçülen aralıkların ortancası, tam saniyeye yuvarlanmış
-function refreshPeriod() {
-  if (!st.gaps.length) return null;
-  const g = [...st.gaps].sort((a, b) => a - b)[Math.floor(st.gaps.length / 2)];
-  return Math.max(1000, Math.round(g / 1000) * 1000);
 }
 
 function send(ch, data) { if (overlayWin && !overlayWin.isDestroyed()) overlayWin.webContents.send(ch, data); }
@@ -290,7 +321,7 @@ function rebuildMenu() {
   const displays = screen.getAllDisplays();
   const cur = targetDisplay();
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Yoklama sayfasını göster (giriş / QR başlatma)', click: () => { sourceWin.show(); sourceWin.focus(); } },
+    { label: 'Yoklama sayfasını göster (giriş / QR başlatma)', click: showSource },
     { label: 'Sayfayı yenile', click: () => sourceWin.webContents.reload() },
     { type: 'separator' },
     { label: 'QR penceresini göster', type: 'checkbox', checked: !userHidden, accelerator: 'Ctrl+Alt+Q', click: toggleOverlay },
@@ -320,11 +351,11 @@ ipcMain.handle('cfg:get', () => cfg);
 ipcMain.handle('cfg:set', (_e, patch) => {
   const urlChanged = patch.url !== undefined && patch.url !== cfg.url;
   cfg = { ...cfg, ...patch }; saveCfg();
-  if (urlChanged) { st.lastLoc = null; st.lastData = null; sourceWin.loadURL(cfg.url); sourceWin.show(); }
+  if (urlChanged) { st.lastLoc = null; st.lastData = null; sourceWin.loadURL(cfg.url); showSource(); }
   restartTimer(); placeOverlay(); rebuildMenu();
   return cfg;
 });
-ipcMain.handle('source:show', () => { sourceWin.show(); sourceWin.focus(); });
+ipcMain.handle('source:show', showSource);
 
 // ---------------------------------------------------------------- başlangıç
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -362,7 +393,8 @@ function runTestHooks() {
     fs.writeFileSync(file, img.toPNG());
     const bmp = bitmapRGBA(img);
     const r = jsQR(bmp.px, bmp.w, bmp.h);
-    console.log('QRY_EVENT overlay', file, 'aot=' + overlayWin.isAlwaysOnTop(), 'decoded=' + (r ? r.data : 'NONE'));
+    const bar = await overlayWin.webContents.executeJavaScript("document.getElementById('bar').textContent");
+    console.log('QRY_EVENT overlay', file, 'aot=' + overlayWin.isAlwaysOnTop(), 'decoded=' + (r ? r.data : 'NONE'), 'bar=' + JSON.stringify(bar));
   }, 3000);
   setTimeout(() => { quitting = true; app.quit(); }, Number(process.env.QRY_TEST_MS || 20000));
 }
