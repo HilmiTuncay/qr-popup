@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('qry', {
   resizeStart: (corner) => ipcRenderer.send('resize:start', corner),
   resizeMove: (dx, dy) => ipcRenderer.send('resize:move', dx, dy),
   resizeEnd: () => ipcRenderer.send('resize:end'),
+  toggleBig: () => ipcRenderer.send('overlay:big'),
+  hide: () => ipcRenderer.send('overlay:hide'),
 });

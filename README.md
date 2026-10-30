@@ -6,9 +6,9 @@ Yoklama sitesini arka planda açık tutar, sayfadaki QR kodu **ekran görüntüs
 
 ## Kullanım (Windows)
 
-1. `QR-Yoklama-1.1.1-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
-2. İlk açılışta Ayarlar penceresi gelir. Yoklama sitesinin adresini yazıp **Kaydet**'e basın.
-3. Açılan pencerede siteye giriş yapın ve QR'ın göründüğü yoklama ekranını başlatın. Ardından o pencereyi **kapatın** (uygulama kapanmaz, site arka planda açık kalır).
+1. `QR-Yoklama-1.2.0-portable.exe` dosyasını çalıştırın. Kurulum ve yönetici yetkisi gerekmez. İmzasız olduğu için Windows "bilinmeyen yayımcı" uyarısı verebilir: **Ek bilgi → Yine de çalıştır**.
+2. İlk açılışta Ayarlar penceresi gelir. Adres hazır gelir (https://yoklama.uludag.edu.tr). Kullanıcı adı ve şifrenizi yazıp **Kaydet**'e basın.
+3. Açılan pencerede kutular dolu gelir; **Giriş**'e basın ve QR'ın göründüğü yoklama ekranını başlatın. Ardından o pencereyi **kapatın** (uygulama kapanmaz, site arka planda açık kalır).
 4. QR penceresi kendiliğinden köşede belirir. PowerPoint'i tam ekran başlatın.
 
 Uygulama sistem tepsisinde (saatin yanındaki QR simgesi) çalışır. Giriş bilgileri/çerezler saklanır. Sonraki açılışlarda yoklama sayfası kendiliğinden açılır; genelde sadece yoklamayı başlatıp pencereyi kapatmak yeterlidir.
@@ -25,6 +25,7 @@ Pencere fareyle sürüklenebilir; yeri hatırlanır. Ekran kenarına tam oturtul
 
 ## Bilmeniz gerekenler
 
+- **Kayıtlı şifre:** Şifre bu bilgisayarda Windows hesabınıza bağlı olarak şifrelenmiş saklanır ve yalnızca ayarlardaki yoklama sitesinin giriş sayfasına doldurulur. Uygulama kendisi giriş yapmaz; oturum düşerse tepsiden "Yoklama sayfasını göster" deyip **Giriş**'e basmanız yeterlidir. Ayarlar'dan "Kayıtlı şifreyi sil" ile kaldırılabilir.
 - **Slayt durmaz:** QR penceresi odak almaz; üstüne tıklamak PowerPoint gösterisini duraklatmaz.
 - **Durum çubuğu:** Yeşil = canlı (sitedeki geri sayım varsa "Canlı · 42 sn" gibi yeni QR'a kalan süre de yazar), turuncu = QR yenileniyor, kırmızı = QR bir süredir görünmüyor (oturum düşmüş olabilir → tepsiden "Yoklama sayfasını göster").
 - **Otomatik gizleme:** QR sayfadan 20 sn kaybolursa pencere gizlenir, yeni yoklamada kendiliğinden geri gelir (Ayarlar'dan kapatılabilir).

@@ -11,6 +11,11 @@
   #qr svg, #qr img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
   #bar { height: 22px; line-height: 22px; font-size: 12px; text-align: center; color: #fff; background: #1a7f37; white-space: nowrap; overflow: hidden; }
   #bar.warn { background: #b35900; }
+  /* durum çubuğundaki küçük düğmeler (sağ alt tutamacın hemen solunda) */
+  #ctl { position: fixed; right: 20px; bottom: 3px; display: flex; gap: 2px; z-index: 3; -webkit-app-region: no-drag; }
+  #ctl button { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: rgba(255,255,255,.18); color: #fff;
+    font: 11px/16px system-ui, "Segoe UI", sans-serif; cursor: pointer; opacity: .6; }
+  #ctl button:hover { opacity: 1; background: rgba(255,255,255,.35); }
   #bar.bad { background: #b42318; }
   #wait { color: #666; font-size: 14px; padding: 12px; text-align: center; }
   /* köşe tutamaçları: fareyle üstüne gelince görünür */
@@ -27,6 +32,7 @@
 <body>
   <div id="qr"><div id="wait">QR bekleniyor…</div></div>
   <div id="bar">Yoklama QR</div>
+  <div id="ctl"><button id="big" title="Tam ekran (Ctrl+Alt+B)">⛶</button><button id="min" title="Simge durumuna küçült (Ctrl+Alt+Q ile geri gelir)">–</button></div>
   <div class="grip tl" data-c="top-left"></div><div class="grip tr" data-c="top-right"></div>
   <div class="grip bl" data-c="bottom-left"></div><div class="grip br" data-c="bottom-right"></div>
 <script>
@@ -35,7 +41,11 @@
     if (d.kind === 'svg') box.innerHTML = d.svg;          // kendi ürettiğimiz SVG
     else { const i = new Image(); i.src = d.src; box.replaceChildren(i); }
   });
+  const bigBtn = document.getElementById('big');
+  bigBtn.onclick = () => window.qry.toggleBig();
+  document.getElementById('min').onclick = () => window.qry.hide();
   window.qry.onStatus((s) => {
+    bigBtn.textContent = s.big ? '⤡' : '⛶'; bigBtn.title = s.big ? 'Köşeye geri al (Ctrl+Alt+B)' : 'Tam ekran (Ctrl+Alt+B)';
     const sec = (ms) => Math.round(ms / 1000);
     if (s.found) {
       bar.className = ''; bar.textContent = s.left != null ? `Canlı · ${s.left} sn` : 'Canlı';

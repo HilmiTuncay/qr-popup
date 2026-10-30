@@ -4,7 +4,7 @@
 
 const {
   app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut,
-  screen, ipcMain, dialog, shell,
+  screen, ipcMain, dialog, shell, safeStorage,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -14,10 +14,15 @@ const QRCode = require('qrcode');
 const TEST = !!process.env.QRY_TEST; // otomatik test modu
 // Test kendi ayar/oturum klasörünü kullanır; böylece açık olan gerçek uygulamayla çakışmaz
 if (TEST) app.setPath('userData', path.join(require('os').tmpdir(), 'qr-yoklama-test'));
+if (TEST && process.env.QRY_TEST_VERSION) app.setVersion(process.env.QRY_TEST_VERSION);
+// Konsol çıktısı kapanmış bir boruya giderse (terminal kapandı) yazma hatası uygulamayı hata kutusuyla durdurmasın
+for (const s of [process.stdout, process.stderr]) s.on('error', () => {});
 
 // ---------------------------------------------------------------- ayarlar
 const DEFAULTS = {
-  url: '',               // yoklama sayfasının adresi
+  url: 'https://yoklama.uludag.edu.tr',   // yoklama sayfasının adresi
+  username: '',          // giriş sayfasına doldurulacak kullanıcı adı
+  passwordEnc: null,     // şifre, Windows hesabına bağlı şifrelenmiş (safeStorage, base64)
   intervalMs: 1000,      // tarama sıklığı
   mode: 'redraw',        // 'redraw' = QR'ı yeniden çiz (net), 'crop' = sayfadaki görüntüyü kırp
   size: 320,             // köşe penceresinin kenarı (px)
@@ -29,11 +34,17 @@ const DEFAULTS = {
   margin: 24,
 };
 let cfg = { ...DEFAULTS };
+let firstRun = false;      // ayar dosyası yoksa: ilk açılışta Ayarlar da açılır
 const cfgFile = () => path.join(app.getPath('userData'), 'ayarlar.json');
 
 function loadCfg() {
-  try { cfg = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) }; } catch { cfg = { ...DEFAULTS }; }
+  try { cfg = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) }; } catch { cfg = { ...DEFAULTS }; firstRun = true; }
   if (TEST) Object.assign(cfg, { url: process.env.QRY_TEST_URL, intervalMs: 500, mode: process.env.QRY_TEST_MODE || 'redraw' });
+  if (TEST) firstRun = false;
+  if (TEST && process.env.QRY_TEST_USER) {
+    cfg.username = process.env.QRY_TEST_USER;
+    cfg.passwordEnc = safeStorage.encryptString(process.env.QRY_TEST_PASS || '').toString('base64');
+  }
 }
 function saveCfg() {
   if (TEST) return;
@@ -69,6 +80,8 @@ function createSourceWindow() {
   sourceWin.on('close', (e) => { if (!quitting) { e.preventDefault(); sourceWin.hide(); } });
   sourceWin.on('show', () => sourceWin.webContents.invalidate());   // gizliyken yakalanan sayfayı yeniden çiz
   sourceWin.webContents.on('did-navigate', wakeSource);             // gizliyken sayfa değişti (oturum düştü, tam yenileme)
+  sourceWin.webContents.on('did-finish-load', fillLogin);
+  sourceWin.webContents.on('did-navigate-in-page', fillLogin);      // tek sayfalık site (Angular) giriş ekranına döndüyse
   sourceWin.webContents.setWindowOpenHandler(({ url }) => {
     sourceWin.loadURL(url); return { action: 'deny' };   // açılır pencereleri aynı pencerede aç
   });
@@ -91,6 +104,42 @@ function wakeSource() {
 function showSource() {
   clearTimeout(wakeTimer); wakeTimer = null;
   sourceWin.setOpacity(1); sourceWin.show(); sourceWin.focus();
+}
+
+// ---------------------------------------------------------------- kayıtlı giriş
+// Giriş sayfasında kullanıcı adı ve şifre kutularını doldurur; "Giriş"e kullanıcı kendisi basar.
+// Yalnızca ayarlardaki yoklama sitesinin sayfasına doldurulur.
+function savedPassword() {
+  try { return cfg.passwordEnc ? safeStorage.decryptString(Buffer.from(cfg.passwordEnc, 'base64')) : ''; } catch { return ''; }
+}
+function sameSite(a, b) { try { return new URL(a).origin === new URL(b).origin; } catch { return false; } }
+function fillLogin() {
+  if (!cfg.username && !cfg.passwordEnc) return;
+  if (!sameSite(sourceWin.webContents.getURL(), cfg.url)) return;
+  const js = `(${fillLoginForm})(${JSON.stringify(cfg.username)}, ${JSON.stringify(savedPassword())})`;
+  sourceWin.webContents.executeJavaScript(js, true).catch(() => {});
+}
+// Sayfada çalışır. Form sonradan çizilebileceği için 15 sn boyunca şifre kutusunu arar;
+// dolu kutuya dokunmaz (kullanıcı yazıyorsa bozmaz).
+function fillLoginForm(user, pass) {
+  const deadline = Date.now() + 15000;
+  const usable = (el) => el.offsetParent !== null && !el.disabled && !el.readOnly;
+  const set = (el, v) => {
+    if (!v || el.value) return;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v);   // Angular/React değişikliği görsün
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  const tryFill = () => {
+    const pw = [...document.querySelectorAll('input[type=password]')].find(usable);
+    if (!pw) { if (Date.now() < deadline) setTimeout(tryFill, 500); return; }
+    // kullanıcı adı: şifre kutusundan önce gelen son metin kutusu
+    const before = [...(pw.form || document).querySelectorAll('input')]
+      .filter((el) => usable(el) && /^(text|email|tel|number)$/.test(el.type) && (el.compareDocumentPosition(pw) & Node.DOCUMENT_POSITION_FOLLOWING));
+    if (before.length) set(before[before.length - 1], user);
+    set(pw, pass);
+  };
+  tryFill();
 }
 
 function createOverlay() {
@@ -159,7 +208,7 @@ function cornerPos(area, size) {
 function createSettings() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
-    width: 520, height: 560, resizable: false, autoHideMenuBar: true, title: 'QR Yoklama — Ayarlar',
+    width: 520, height: 720, resizable: false, autoHideMenuBar: true, title: 'QR Yoklama — Ayarlar',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true },
   });
   settingsWin.loadFile(path.join(__dirname, 'settings.html'));
@@ -259,7 +308,7 @@ async function tick() {
     }
     const left = found ? await readCountdown() : null;
     updateVisibility(now, !!found);
-    send('status', { found: !!found, sinceSeen: st.lastSeen ? now - st.lastSeen : null, left });
+    send('status', { found: !!found, sinceSeen: st.lastSeen ? now - st.lastSeen : null, left, big });
   } catch (e) {
     console.error('Tarama hatası:', e.message);
   } finally { busy = false; }
@@ -281,6 +330,17 @@ function restartTimer() { clearInterval(timer); timer = setInterval(tick, Math.m
 
 // ---------------------------------------------------------------- menü ve kısayollar
 function toggleOverlay() { userHidden = !userHidden; if (userHidden) overlayWin.hide(); else { placeOverlay(); overlayWin.showInactive(); } rebuildMenu(); }
+// QR penceresindeki küçük düğmeler: tam ekran (ortada büyük) ve simge durumu (tepsiye gizle)
+let hideHintShown = false;
+ipcMain.on('overlay:big', toggleBig);
+ipcMain.on('overlay:hide', () => {
+  if (userHidden) return;
+  toggleOverlay();
+  if (!hideHintShown && tray && process.platform === 'win32') {
+    hideHintShown = true;
+    tray.displayBalloon({ title: 'QR gizlendi', content: 'Geri getirmek için Ctrl+Alt+Q ya da tepsideki QR simgesi → "QR penceresini göster".' });
+  }
+});
 function toggleBig() { big = !big; placeOverlay(); if (!userHidden && st.lastSeen) overlayWin.showInactive(); rebuildMenu(); }
 function resize(delta) { cfg.size = Math.max(160, Math.min(1200, cfg.size + delta)); big = false; saveCfg(); placeOverlay(); }
 
@@ -347,22 +407,54 @@ function registerShortcuts() {
 }
 
 // ---------------------------------------------------------------- IPC
-ipcMain.handle('cfg:get', () => cfg);
-ipcMain.handle('cfg:set', (_e, patch) => {
+// Şifre pencerelere hiç gönderilmez; yalnızca kayıtlı olup olmadığı bildirilir
+const publicCfg = () => { const { passwordEnc, ...c } = cfg; return { ...c, hasPassword: !!passwordEnc }; };
+ipcMain.handle('cfg:get', publicCfg);
+ipcMain.handle('cfg:set', (_e, { password, forgetPassword, passwordEnc, hasPassword, ...patch }) => {
+  if (forgetPassword) patch.passwordEnc = null;
+  else if (password) {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Bu bilgisayarda şifre güvenli saklanamıyor');
+    patch.passwordEnc = safeStorage.encryptString(password).toString('base64');
+  }
   const urlChanged = patch.url !== undefined && patch.url !== cfg.url;
   cfg = { ...cfg, ...patch }; saveCfg();
   if (urlChanged) { st.lastLoc = null; st.lastData = null; sourceWin.loadURL(cfg.url); showSource(); }
   restartTimer(); placeOverlay(); rebuildMenu();
-  return cfg;
+  return publicCfg();
 });
 ipcMain.handle('source:show', showSource);
 
 // ---------------------------------------------------------------- başlangıç
-if (!app.requestSingleInstanceLock()) app.quit();
-app.on('second-instance', () => createSettings());
+// Aynı anda ikinci kopya açılırsa: açılan daha yeni sürümse eskisi kapanır ve yenisi devralır;
+// aynı ya da eski sürümse açık olan öne gelir, yeni açılan kapanır (ders ortasında QR ekranı kaybolmasın).
+const runningFile = () => path.join(app.getPath('userData'), 'calisan.json');
+const newer = (a, b) => {   // a, b'den yeni mi (1.10.0 > 1.9.0)
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+};
+async function takeLock() {
+  const me = { version: app.getVersion() };
+  if (app.requestSingleInstanceLock(me)) return true;
+  let running = null;
+  try { running = JSON.parse(fs.readFileSync(runningFile(), 'utf8')).version; } catch {}
+  if (running && !newer(me.version, running)) return false;
+  for (let i = 0; i < 40; i++) {   // eski kopyanın kapanmasını bekle (en çok 10 sn)
+    await new Promise((r) => setTimeout(r, 250));
+    if (app.requestSingleInstanceLock(me)) return true;
+  }
+  return false;
+}
+app.on('second-instance', (_e, _argv, _cwd, other) => {
+  if (other && newer(other.version, app.getVersion())) { quitting = true; app.quit(); return; }
+  if (!userHidden && st.lastSeen && overlayWin) overlayWin.showInactive();
+  createSettings();
+});
 app.on('window-all-closed', (e) => e.preventDefault()); // tepside çalışmaya devam
 
 app.whenReady().then(async () => {
+  if (!(await takeLock())) { app.quit(); return; }
+  try { fs.mkdirSync(app.getPath('userData'), { recursive: true }); fs.writeFileSync(runningFile(), JSON.stringify({ version: app.getVersion(), pid: process.pid })); } catch {}
   loadCfg();
   if (process.platform === 'darwin' && app.dock) app.dock.hide(); // macOS: tam ekran slaytın üstünde kalabilmek için
   createSourceWindow();
@@ -375,7 +467,7 @@ app.whenReady().then(async () => {
   registerShortcuts();
   screen.on('display-added', () => { placeOverlay(); rebuildMenu(); });
   screen.on('display-removed', () => { placeOverlay(); rebuildMenu(); });
-  if (!cfg.url) createSettings();
+  if (firstRun || !cfg.url) createSettings();
   restartTimer();
   if (TEST) runTestHooks();
 });
@@ -385,6 +477,28 @@ app.on('will-quit', () => globalShortcut.unregisterAll());
 function runTestHooks() {
   const out = process.env.QRY_TEST_OUT || '.';
   let n = 0;
+  if (cfg.username) setTimeout(async () => {    // kayıtlı giriş: kutular doldu mu
+    const v = await sourceWin.webContents.executeJavaScript(
+      "[...document.querySelectorAll('input')].map((i) => i.type + '=' + (i.type === 'password' ? i.value.length + ' karakter' : i.value)).join(' ')");
+    console.log('QRY_EVENT login', sourceWin.webContents.getURL(), v);
+  }, 4000);
+  if (process.env.QRY_TEST_SETTINGS) {   // Ayarlar penceresi gerçekten çiziliyor mu
+    createSettings();
+    setTimeout(async () => {
+      const file = path.join(out, 'settings.png');
+      fs.writeFileSync(file, (await settingsWin.webContents.capturePage()).toPNG());
+      const v = await settingsWin.webContents.executeJavaScript("document.getElementById('url').value + ' | kullanıcı=' + document.getElementById('user').value + ' | şifre: ' + document.getElementById('pass').placeholder");
+      console.log('QRY_EVENT settings', file, v);
+    }, 2500);
+  }
+  if (process.env.QRY_TEST_CLICK) {   // QR penceresindeki düğmelere gerçek fare tıklaması
+    const click = async (id) => {
+      const r = await overlayWin.webContents.executeJavaScript(`(() => { const b = document.getElementById('${id}').getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; })()`);
+      for (const type of ['mouseDown', 'mouseUp']) overlayWin.webContents.sendInputEvent({ type, x: Math.round(r[0]), y: Math.round(r[1]), button: 'left', clickCount: 1 });
+    };
+    setTimeout(async () => { await click('big'); setTimeout(() => console.log('QRY_EVENT click big ->', overlayWin.getBounds().width + 'px', 'big=' + big), 500); }, 5000);
+    setTimeout(async () => { await click('big'); await new Promise((r) => setTimeout(r, 1500)); await click('min'); setTimeout(() => console.log('QRY_EVENT click min -> visible=' + overlayWin.isVisible()), 500); }, 8000);
+  }
   setInterval(async () => {
     if (quitting || overlayWin.isDestroyed()) return;
     if (!overlayWin.isVisible()) { console.log('QRY_EVENT overlay hidden'); return; }

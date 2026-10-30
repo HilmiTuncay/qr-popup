@@ -11,7 +11,7 @@
   p.lead { margin: 0 0 18px; color: var(--muted); }
   label { display: block; font-weight: 600; margin: 14px 0 5px; }
   small { display: block; color: var(--muted); font-weight: 400; margin-top: 3px; }
-  input[type=url], input[type=number], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: #fff; }
+  input[type=url], input[type=number], input[type=text], input[type=password], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: #fff; }
   .row { display: flex; gap: 12px; } .row > div { flex: 1; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 400; }
   .btns { display: flex; gap: 10px; margin-top: 22px; }
@@ -22,10 +22,22 @@
 </head>
 <body>
   <h1>QR Yoklama Penceresi</h1>
-  <p class="lead">Yoklama sitesinin adresini girin. Kaydedince site açılır: giriş yapıp QR ekranını başlatın ve o pencereyi kapatın. Uygulama QR'ı kendisi bulur ve slaytın üstünde gösterir.</p>
+  <p class="lead">Kullanıcı adı ve şifrenizi girip Kaydet'e basın. Site açılır: giriş yapıp QR ekranını başlatın ve o pencereyi kapatın. Uygulama QR'ı kendisi bulur ve slaytın üstünde gösterir.</p>
 
   <label for="url">Yoklama sayfasının adresi</label>
-  <input id="url" type="url" placeholder="https://yoklama.universite.edu.tr/...">
+  <input id="url" type="url" placeholder="https://yoklama.uludag.edu.tr">
+
+  <div class="row">
+    <div>
+      <label for="user">Kullanıcı adı</label>
+      <input id="user" type="text" autocomplete="off" spellcheck="false">
+    </div>
+    <div>
+      <label for="pass">Şifre</label>
+      <input id="pass" type="password" autocomplete="new-password">
+    </div>
+  </div>
+  <small>Kaydedilirse sitenin giriş sayfasında kutular kendiliğinden doldurulur, <b>Giriş</b>'e siz basarsınız. Şifre bu bilgisayarda Windows hesabınıza bağlı olarak şifrelenmiş saklanır. <a href="#" id="forget" hidden>Kayıtlı şifreyi sil</a></small>
 
   <div class="row">
     <div>
@@ -59,14 +71,18 @@
   <p style="margin:18px 0 0;text-align:right;font-size:11px;color:#8a94a0">QR Yoklama · Hilmi Tunçay</p>
 <script>
   const $ = (id) => document.getElementById(id);
+  const showPass = (has) => { $('pass').value = ''; $('pass').placeholder = has ? '•••••••• (kayıtlı)' : ''; $('forget').hidden = !has; };
   window.qry.getCfg().then((c) => {
-    $('url').value = c.url; $('interval').value = String(c.intervalMs); $('size').value = c.size;
+    $('url').value = c.url; $('user').value = c.username || ''; showPass(c.hasPassword); $('interval').value = String(c.intervalMs); $('size').value = c.size;
     $('mode').value = c.mode; $('autoHide').checked = c.autoHide;
   });
   $('save').onclick = async () => {
-    await window.qry.setCfg({ url: $('url').value.trim(), intervalMs: +$('interval').value, size: +$('size').value || 320, mode: $('mode').value, autoHide: $('autoHide').checked });
+    // şifre kutusu boş bırakılırsa kayıtlı şifre korunur
+    const c = await window.qry.setCfg({ url: $('url').value.trim(), username: $('user').value.trim(), password: $('pass').value, intervalMs: +$('interval').value, size: +$('size').value || 320, mode: $('mode').value, autoHide: $('autoHide').checked });
+    showPass(c.hasPassword);
     $('ok').textContent = 'Kaydedildi ✓'; setTimeout(() => $('ok').textContent = '', 2500);
   };
+  $('forget').onclick = async (e) => { e.preventDefault(); showPass((await window.qry.setCfg({ forgetPassword: true })).hasPassword); };
   $('src').onclick = () => window.qry.showSource();
 </script>
 </body>
